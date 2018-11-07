@@ -6,10 +6,9 @@
 # @File    : test1.py
 # @Software: PyCharm Community Edition
 
-from selenium import webdriver
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
+import urllib3
+from bs4 import BeautifulSoup as bs
+import lxml
 from DBUtils.PooledDB import PooledDB
 import datetime
 import time
@@ -18,13 +17,11 @@ import configparser
 import threading
 import xlwt
 import csv
-global count,i
+global count
 count = 0
-i=1
 def baidusearch(wd):
     time1 = str(int(time.time()))
-    option = webdriver.ChromeOptions()
-    option.add_argument('headless')
+    pm = urllib3.PoolManager()
     def DBpool():#dbpool
         cf = configparser.ConfigParser()
         cf.read("mysql.conf")
@@ -55,20 +52,41 @@ def baidusearch(wd):
         finally:
             cur.close()
             conn.close()
-
     create_table()
-    driver = webdriver.Chrome(chrome_options = option)
-    start_url = 'http://www.baidu.com/s?wd='
-    driver.get(start_url + wd)
-    elements_num = driver.find_element_by_class_name('nums_text')
-    res = elements_num.text
-    print(res)
+
+    def getpageinfo():
+        html = pm.request('get','http://www.baidu.com/s?wd='+wd)
+        htmldecode = html.data.decode('utf-8')
+        soup = bs(htmldecode,"lxml")
+        for a in soup.h3.children:
+            print(a)
+
+    fileds = ['id', 'title', 'time']
+    try:# excel
+        filename = wd+time1+'.xls'
+        wbook = xlwt.Workbook()
+        sheet1 = wbook.add_sheet(filename, cell_overwrite_ok=True)
+        sheet1.write(0,0,elements_num.text)
+        for f in range(0, len(fileds)):
+            sheet1.write(1, f, fileds[f])
+    except Exception as e:
+        print(e)
+    # csv
+    try:
+        file = wd +time1+'.csv'
+        f = open(file, 'w', newline='')
+        csv_write = csv.writer(f)
+        csv_write.writerow(elements_num.text)
+        csv_write.writerow(fileds)
+        f.close()
+    except Exception as e:
+        print(e)
 
     def get_page():  # get current page infomation
         try:
             elements1 = driver.find_elements_by_xpath("//*/h3")
             for ele in elements1:
-                t1 = threading.Thread(target=insert, args=(wd+time1, ele.text))  # multi-threading
+                t1 = threading.Thread(target=insert, args=(wd, ele.text))  # multi-threading
                 t1.start()
                 t1.join()
         except Exception as e:
@@ -94,7 +112,7 @@ def baidusearch(wd):
         try:
             conn = dbpool.connection()
             cur = conn.cursor()
-            sql = "insert into {} values ({},'{}','{}')".format(table_name, 0, title, time_now)
+            sql = "insert into {} values ({},'{}','{}')".format(wd+time1, 0, title, time_now)
             print(sql)
             cur.execute(sql)
             conn.commit()
@@ -107,61 +125,33 @@ def baidusearch(wd):
         finally:
             cur.close()
             conn.close()
-
-    def savetofiles():
-        conn = dbpool.connection()
-        cur = conn.cursor()
-        cur.execute("select * from {}".format(wd+time1))
-        results = cur.fetchall()
-        fileds = ['id', 'title', 'time']
-        try:  # excel
-            filename = wd + time1 + '.xls'
-            wbook = xlwt.Workbook()
-            sheet1 = wbook.add_sheet(wd+time1, cell_overwrite_ok=True)
-            sheet1.write(0, 0, res)
-            for f in range(0, len(fileds)):
-                sheet1.write(1, f, fileds[f])
+        try:
+            for col in range(0, len(result)):
+                print(result[col])
+                sheet1.write(count+1, col, result[col])
+            print('save to excel succ.')
         except Exception as e:
             print(e)
-            # csv
+            print('save to excel error...')
+        finally:
+            wbook.save(filename)
         try:
-            file = wd + time1 + '.csv'
-            f = open(file, 'w', newline='')
+            file = wd+time1+'.csv'
+            f = open(file, 'a', newline='')
             csv_write = csv.writer(f)
-            csv_write.writerow(res)
-            csv_write.writerow(fileds)
+            csv_write.writerow(result)
+            print('save to csv succ.')
             f.close()
         except Exception as e:
             print(e)
-        for result in results:
-            global i
-            i=i+1
-            try:
-                for col in range(0, len(result)):
-                    sheet1.write(i, col, result[col])
-                print('save to excel succ.')
-            except Exception as e:
-                print(e)
-                print('save to excel error...')
-            finally:
-                wbook.save(filename)
-            try:
-                file = wd + time1 + '.csv'
-                f = open(file, 'a', newline='')
-                csv_write = csv.writer(f)
-                csv_write.writerow(res)
-                csv_write.writerow(result)
-                print('save to csv succ.')
-                f.close()
-            except Exception as e:
-                print(e)
-                print('save to csv error...')
-        print('save to files succ')
+            print('save to csv error...')
     get_page()
-    savetofiles()
-    dbpool.close()
-    print()
-    return res, wd + time1
+    pool.close()
+    return res
+if __name__ == '__main__':
+    baidusearch('hello')
+
+
 
 
 

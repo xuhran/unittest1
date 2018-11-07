@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>end</title>
+    <style>
+		table {
+		  margin: 0 auto;
+		  text-align: center;
+		  border-collapse: collapse;
+		  border: 1px solid #d4d4d4;
+		  height: 500px;
+		}
+
+		tr:nth-child(even) {
+		  background: #d4d4d4;
+		}
+
+		th,td {
+		  padding: 10px 30px;
+		}
+
+		th {
+		  border-bottom: 1px solid #d4d4d4;
+		}
+	</style>
+</head>
+<body>
+<center>
+<h1>{{ para[0] }}</h1>
+<h1>表名为{{ para[1] }}</h1>
+<script src="CsvToTable.js"></script>
+<script>
+    var csvtotable = new CsvToTable({
+        csvFile:'C:\\Users\\xuhr12\\PycharmProjects\\flask\\baidu_search.csv'
+    });
+    csvtotable.run()
+</script>
+
+<a href="C:\Users\xuhr12\PycharmProjects\flask\{{ para[1] }}.xls">download xls</a>
+    <a href="C:\Users\xuhr12\PycharmProjects\flask\{{ para[1] }}.csv">download csv</a>
+</center>
+</body>
+</html>

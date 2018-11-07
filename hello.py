@@ -7,7 +7,7 @@
 # @Software: PyCharm
 import pymysql
 from csvtotable import convert
-from flask import Flask,request,render_template
+from flask import Flask, request, render_template
 from baidu import baidusearch
 import csv,sys
 app = Flask(__name__)
